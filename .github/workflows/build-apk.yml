@@ -1,4 +1,4 @@
-name: Build Android APK (Final Fix)
+name: Build Android APK (Icon Forced Fix)
 on:
   push:
     branches: [ main ]
@@ -28,24 +28,50 @@ jobs:
 
     - name: Prepare Workspace & Assets
       run: |
-        # অ্যান্ড্রয়েড অ্যাপের জন্য পরিষ্কার পাথ ও ডিরেক্টরি তৈরি
         mkdir -p www
-        
-        # রুট ডিরেক্টরি থেকে সব ওয়েব ফাইল .html, .css এবং ফোল্ডার www এর ভেতরে কপি করা হচ্ছে
         cp -r js www/ || true
         cp *.html www/ || true
         cp *.css www/ || true
         cp *.png www/ || true
         
-        # বিল্ড প্যাকেজ কনফিগারেশন
         echo '{"name": "kd-player-app", "version": "1.0.0", "dependencies": {"@capacitor/core": "^6.0.0"}, "devDependencies": {"@capacitor/cli": "^6.0.0", "@capacitor/android": "^6.0.0"}}' > package.json
         npm install
 
     - name: Configure Capacitor Project
       run: |
-        # নতুন তৈরি হওয়া www ফোল্ডারকে ওয়েব ডিরেক্টরি হিসেবে এসাইন করা হলো
         echo '{"appId": "com.kdplayer.retro", "appName": "KDPlayer", "webDir": "www"}' > capacitor.config.json
         npx cap add android
+
+    - name: Force Android App Icon Replacement
+      run: |
+        # অ্যান্ড্রয়েডের ভেতরের আইকন রাখার মেইন ৫টি ফোল্ডার পাথ ডেফিসিয়েশন
+        RES_DIR="android/app/src/main/res"
+        
+        # আপনার দেওয়া favicon.png বা cd.png-কে আইকন সোর্স হিসেবে ধরা
+        if [ -f "www/favicon.png" ]; then
+          SRC_ICON="www/favicon.png"
+        else
+          SRC_ICON="www/cd.png"
+        fi
+        
+        # 🎯 অ্যান্ড্রয়েডের সমস্ত ডিফল্ট (গোল ও চারকোনা) আইকন আপনার ছবি দিয়ে জোরপূর্বক পরিবর্তন করা হলো
+        cp $SRC_ICON $RES_DIR/mipmap-mdpi/ic_launcher.png || true
+        cp $SRC_ICON $RES_DIR/mipmap-hdpi/ic_launcher.png || true
+        cp $SRC_ICON $RES_DIR/mipmap-xhdpi/ic_launcher.png || true
+        cp $SRC_ICON $RES_DIR/mipmap-xxhdpi/ic_launcher.png || true
+        cp $SRC_ICON $RES_DIR/mipmap-xxxhdpi/ic_launcher.png || true
+        
+        cp $SRC_ICON $RES_DIR/mipmap-mdpi/ic_launcher_round.png || true
+        cp $SRC_ICON $RES_DIR/mipmap-hdpi/ic_launcher_round.png || true
+        cp $SRC_ICON $RES_DIR/mipmap-xhdpi/ic_launcher_round.png || true
+        cp $SRC_ICON $RES_DIR/mipmap-xxhdpi/ic_launcher_round.png || true
+        cp $SRC_ICON $RES_DIR/mipmap-xxxhdpi/ic_launcher_round.png || true
+        
+        cp $SRC_ICON $RES_DIR/mipmap-mdpi/ic_launcher_foreground.png || true
+        cp $SRC_ICON $RES_DIR/mipmap-hdpi/ic_launcher_foreground.png || true
+        cp $SRC_ICON $RES_DIR/mipmap-xhdpi/ic_launcher_foreground.png || true
+        cp $SRC_ICON $RES_DIR/mipmap-xxhdpi/ic_launcher_foreground.png || true
+        cp $SRC_ICON $RES_DIR/mipmap-xxxhdpi/ic_launcher_foreground.png || true
 
     - name: Sync Code to Native Project
       run: |
@@ -62,3 +88,4 @@ jobs:
       with:
         name: KD-Player-App-APK
         path: android/app/build/outputs/apk/debug/app-debug.apk
+        
