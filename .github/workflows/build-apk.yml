@@ -1,4 +1,4 @@
-name: Build Android APK (Capacitor Fixed)
+name: Build Android APK (Final Fix)
 on:
   push:
     branches: [ main ]
@@ -26,32 +26,39 @@ jobs:
       with:
         log-accepted-android-sdk-licenses: true
 
-    - name: Initialize App Package
+    - name: Prepare Workspace & Assets
       run: |
-        # অ্যান্ড্রয়েড বিল্ডের জন্য নিখুঁত package.json তৈরি
+        # অ্যান্ড্রয়েড অ্যাপের জন্য পরিষ্কার পাথ ও ডিরেক্টরি তৈরি
+        mkdir -p www
+        
+        # রুট ডিরেক্টরি থেকে সব ওয়েব ফাইল .html, .css এবং ফোল্ডার www এর ভেতরে কপি করা হচ্ছে
+        cp -r js www/ || true
+        cp *.html www/ || true
+        cp *.css www/ || true
+        cp *.png www/ || true
+        
+        # বিল্ড প্যাকেজ কনফিগারেশন
         echo '{"name": "kd-player-app", "version": "1.0.0", "dependencies": {"@capacitor/core": "^6.0.0"}, "devDependencies": {"@capacitor/cli": "^6.0.0", "@capacitor/android": "^6.0.0"}}' > package.json
         npm install
 
-    - name: Configure Capacitor
+    - name: Configure Capacitor Project
       run: |
-        # কনফিগারেশন ফাইল তৈরি
-        echo '{"appId": "com.kdplayer.retro", "appName": "KDPlayer", "webDir": "."}' > capacitor.config.json
+        # নতুন তৈরি হওয়া www ফোল্ডারকে ওয়েব ডিরেক্টরি হিসেবে এসাইন করা হলো
+        echo '{"appId": "com.kdplayer.retro", "appName": "KDPlayer", "webDir": "www"}' > capacitor.config.json
         npx cap add android
 
-    - name: Sync Web Files to Android
+    - name: Sync Code to Native Project
       run: |
-        # গিটহাবের ইন্টারনাল ফাইলগুলো বাদ দিয়ে সিঙ্ক করা
         npx cap sync android
 
-    - name: Fix Android Build Permissions & Build APK
+    - name: Fix Linux Gradle Permissions & Compile APK
       run: |
         cd android
-        # লিনাক্স এনভায়রনমেন্টে গ্র্যাডল রান করার পারমিশন ফিক্স
         chmod +x gradlew
         ./gradlew assembleDebug
 
-    - name: Upload Finished APK
+    - name: Upload Finished APK Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: KD-Player-Capacitor-APK
+        name: KD-Player-App-APK
         path: android/app/build/outputs/apk/debug/app-debug.apk
