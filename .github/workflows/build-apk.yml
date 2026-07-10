@@ -1,4 +1,4 @@
-name: Build Android APK (Capacitor)
+name: Build Android APK (Capacitor Fixed)
 on:
   push:
     branches: [ main ]
@@ -21,30 +21,33 @@ jobs:
         distribution: 'zulu'
         java-version: '17'
 
-    - name: Install Android SDK
+    - name: Install Android SDK & Accept Licenses
       uses: android-actions/setup-android@v3
+      with:
+        log-accepted-android-sdk-licenses: true
 
-    - name: Initialize Capacitor App
+    - name: Initialize App Package
       run: |
-        # একটি ডামি package.json তৈরি করা যাতে ডিপেন্ডেন্সি ইনস্টল করা যায়
-        npm init -y
-        # ক্যাডাসিটর কোর এবং সিএলআই ইনস্টল
-        npm install @capacitor/core @capacitor/cli
-        # অ্যাপ কনফিগারেশন ইনিশিয়ালাইজ করা (গানের ফোল্ডার www এর জায়গায় মেইন রুট ./ থাকবে)
-        npx cap init KDPlayer com.kdplayer.retro --web-dir=.
-        # অ্যান্ড্রয়েড প্ল্যাটফর্ম ইনস্টল
-        npm install @capacitor/android
+        # অ্যান্ড্রয়েড বিল্ডের জন্য নিখুঁত package.json তৈরি
+        echo '{"name": "kd-player-app", "version": "1.0.0", "dependencies": {"@capacitor/core": "^6.0.0"}, "devDependencies": {"@capacitor/cli": "^6.0.0", "@capacitor/android": "^6.0.0"}}' > package.json
+        npm install
+
+    - name: Configure Capacitor
+      run: |
+        # কনফিগারেশন ফাইল তৈরি
+        echo '{"appId": "com.kdplayer.retro", "appName": "KDPlayer", "webDir": "."}' > capacitor.config.json
         npx cap add android
 
-    - name: Sync Web Files to Android Project
+    - name: Sync Web Files to Android
       run: |
-        # গিটহাবের এই বিল্ড ওয়ার্কফ্লো ফোল্ডারটি যাতে অ্যাপে না যায় তা রিমুভ করা
-        rm -rf .github
+        # গিটহাবের ইন্টারনাল ফাইলগুলো বাদ দিয়ে সিঙ্ক করা
         npx cap sync android
 
-    - name: Build Android Debug APK
+    - name: Fix Android Build Permissions & Build APK
       run: |
         cd android
+        # লিনাক্স এনভায়রনমেন্টে গ্র্যাডল রান করার পারমিশন ফিক্স
+        chmod +x gradlew
         ./gradlew assembleDebug
 
     - name: Upload Finished APK
