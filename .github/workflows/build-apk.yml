@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build Android APK (Capacitor)
 on:
   push:
     branches: [ main ]
@@ -8,38 +8,47 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout Source Code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Set up Node.js
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
-        node-size: 16
+        node-version: 18
 
-    - name: Set up JDK 11
-      uses: actions/setup-java@v3
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
       with:
         distribution: 'zulu'
-        java-version: '11'
+        java-version: '17'
 
     - name: Install Android SDK
-      uses: android-actions/setup-android@v2
+      uses: android-actions/setup-android@v3
 
-    - name: Install Cordova
-      run: npm install -g cordova
-
-    - name: Create Cordova Project & Build APK
+    - name: Initialize Capacitor App
       run: |
-        cordova create myApp com.kdplayer.retro KDPlayer
-        cd myApp
-        cordova platform add android
-        rm -rf www/*
-        cp -r ../* www/ || true
-        rm -rf www/myApp www/.github
-        cordova build android --debug
+        # একটি ডামি package.json তৈরি করা যাতে ডিপেন্ডেন্সি ইনস্টল করা যায়
+        npm init -y
+        # ক্যাডাসিটর কোর এবং সিএলআই ইনস্টল
+        npm install @capacitor/core @capacitor/cli
+        # অ্যাপ কনফিগারেশন ইনিশিয়ালাইজ করা (গানের ফোল্ডার www এর জায়গায় মেইন রুট ./ থাকবে)
+        npx cap init KDPlayer com.kdplayer.retro --web-dir=.
+        # অ্যান্ড্রয়েড প্ল্যাটফর্ম ইনস্টল
+        npm install @capacitor/android
+        npx cap add android
+
+    - name: Sync Web Files to Android Project
+      run: |
+        # গিটহাবের এই বিল্ড ওয়ার্কফ্লো ফোল্ডারটি যাতে অ্যাপে না যায় তা রিমুভ করা
+        rm -rf .github
+        npx cap sync android
+
+    - name: Build Android Debug APK
+      run: |
+        cd android
+        ./gradlew assembleDebug
 
     - name: Upload Finished APK
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
-        name: KD-Player-APK
-        path: myApp/platforms/android/app/build/outputs/apk/debug/app-debug.apk
-        
+        name: KD-Player-Capacitor-APK
+        path: android/app/build/outputs/apk/debug/app-debug.apk
