@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="favicon.png">
+    <title>KD Player</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- অ্যালবাম আর্ট রিড করার জন্য নিখুঁত মিডিয়া ট্যাগ স্ক্রিপ্ট -->
+    <script src="https://cloudflare.com"></script>
+</head>
+<body>
+
+    <div class="kd-jar-container">
+        <div class="kd-main-logo">KD Player</div>
+
+        <div class="kd-meta-info">
+            <span>128kbit</span>
+            <span id="trackCounter">0/0</span>
+            <span>44100Hz</span>
+        </div>
+
+        <div class="kd-display-core">
+            <!-- এখানে নতুন স্কয়ার ফ্রেম এবং সিডি সেকশনটি নিখুঁতভাবে বসানো হয়েছে -->
+            <div class="cd-square-frame">
+                <div class="cd-vinyl-art" id="cdThumb">
+                    <div class="cd-center-hole"></div>
+                </div>
+            </div>
+            
+            <div class="scrolling-title-box">
+                <div class="scrolling-text" id="trackTitle">No Track Loaded</div>
+            </div>
+        </div>
+
+        <div class="kd-visualizer-container" id="visualizerBox">
+            <div class="album-bg-overlay" id="albumBg"></div>
+            <div class="bar-wrapper" id="barWrapper"></div>
+        </div>
+
+        <div class="kd-timeline-section">
+            <div class="seekbar-wrapper">
+                <div class="seekbar-ball" id="seekbarBall"></div>
+                <input type="range" id="seekBar" min="0" max="100" value="0">
+            </div>
+            <div class="time-labels">
+                <span id="currentTime">00:00</span>
+                <span id="durationTime">00:00</span>
+            </div>
+        </div>
+
+        <div class="kd-controller-pad">
+            <span class="side-indicator-text">123</span>
+            
+            <!-- বামের ওল্ড-跨কূল স্পিকার -->
+            <div class="speaker-box left-spk" id="volDownTrigger">
+                <div class="speaker-level" id="leftSpkLevel"></div>
+                <div class="curved-bracket-left"></div>
+            </div>
+
+            <div class="center-buttons">
+                <button class="ctrl-btn" id="prevBtn">⏮</button>
+                <button class="ctrl-btn play-pause-core" id="playBtn">▶</button>
+                <button class="ctrl-btn" id="nextBtn">⏭</button>
+            </div>
+
+            <!-- ডানের ওল্ড-স্কুল স্পিকার -->
+            <div class="speaker-box right-spk" id="volUpTrigger">
+                <div class="speaker-level" id="rightSpkLevel"></div>
+                <div class="curved-bracket-right"></div>
+            </div>
+
+            <span class="side-indicator-arrow">➡</span>
+        </div>
+
+<!-- ওরিজিনাল জাভা স্টাইল ফেডিং সাদা লাইন -->
+<div class="java-fade-line"></div>
+
+<div class="kd-softkey-bar">
+    <div class="soft-btn" id="menuTriggerBtn">Menu</div>
+    
+
+            <div class="soft-btn center-status" id="statusIndicator">Pause</div>
+            <div class="soft-btn text-right" id="stopBtn">Stop</div>
+        </div>
+
+        <input type="file" id="fileInput" accept="audio/*" multiple style="display: none;">
+        <div class="java-popup-menu" id="javaSubMenu">
+            <div class="menu-item" data-action="minimize">1 Minimize</div>
+            <div class="menu-item" data-action="info">2 Information</div>
+            <div class="menu-item" data-action="send">3 Send to...</div>
+            <label for="fileInput" class="menu-item" style="display: block; margin:0; cursor:pointer;">4 Playlist (Add Music)</label>
+            <div class="menu-item" data-action="mainmenu">5 Main Menu</div>
+            <div class="menu-item" data-action="equalizer">6 Equalizer</div>
+            <div class="menu-item" data-action="visual">7 Visualization</div>
+            <div class="menu-item" data-action="help">8 Help</div>
+        </div>
+    </div>
+
+    <!-- আগের script.js বাদ দিয়ে মডিউল টাইপ সহ main.js যোগ করুন -->
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>

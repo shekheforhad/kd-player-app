@@ -1,0 +1,288 @@
+body {
+    background-color: #121212;
+    margin: 0; padding: 0;
+    height: 100vh;
+    display: flex; justify-content: center; align-items: center;
+    font-family: Arial, sans-serif;
+    user-select: none; overflow: hidden;
+}
+
+.kd-jar-container {
+    background: linear-gradient(to bottom, #ff8533, #ff6600);
+    width: 100vw;
+    max-width: 420px;
+    height: 98vh;
+    max-height: 720px; 
+    display: flex; flex-direction: column;
+    position: relative; box-sizing: border-box;
+    border-radius: 12px;
+    box-shadow: 0 12px 35px rgba(0,0,0,0.7);
+}
+
+.kd-main-logo {
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 30px; font-weight: bold; font-style: italic; color: #fff;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.9), 2px 2px 2px #cc5200;
+    text-align: center; padding-top: 15px;
+}
+
+.kd-meta-info {
+    display: flex; justify-content: space-between;
+    padding: 5px 20px; color: #ffe0cc; font-size: 13px; font-weight: bold;
+}
+
+.kd-display-core { display: flex; align-items: center; padding: 5px 20px; }
+
+/* ১. বাইরের ফিক্সড স্কয়ার ফ্রেম (এটি একদম ঘুরবে না, স্থির থাকবে) */
+.cd-square-frame {
+    width: 80px;
+    height: 80px;
+    background-image: url('cd.png');
+    background-size: 80px 80px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-shrink: 0;
+    overflow: hidden;
+    position: relative;
+}
+
+/* ২. ভেতরের গোল সিডি (আপনার দেওয়া cd.png ফাইলটি এখানে ব্যাকগ্রাউন্ড হিসেবে ঘুরবে) */
+.cd-vinyl-art {
+    width: 75px;
+    height: 75px;
+    background-image: url('cd.png'); /* আপনার ক্রপ করা পিএনজি ফাইল */
+    background-size: cover;
+    background-position: center;
+    border-radius: 50%; /* সিএসএস দিয়ে ইমেজটিকে পারফেক্ট গোল ডিক্স বানানো হলো */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+
+    /* ঘোরার ট্রানজিশন স্পেসিফিকেশন */
+    transition: transform 0.5s ease;
+    animation: spinDisk 5s linear infinite;
+    animation-play-state: paused; /* ডিফল্টভাবে ঘোরা বন্ধ থাকবে */
+}
+
+/* ৩. সিডির মাঝখানের গোল রিঙের হোল ইফেক্ট */
+.cd-center-hole {
+    width: 12px;
+    height: 12px;
+    background: #ff8533;
+    border: 2px solid #ffcc99;
+    border-radius: 50%;
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.4);
+    z-index: 5;
+}
+
+/* ৪. গ্লসি প্লাস্টিক রিফ্লেকশন শ্যাডো (এটি সিডির ওপর চকচকে ভাব আনবে) */
+.cd-vinyl-art::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    border-radius: 50%;
+    background: linear-gradient(135deg, 
+        rgba(255, 255, 255, 0.3) 0%, 
+        rgba(255, 255, 255, 0) 50%, 
+        rgba(255, 255, 255, 0.1) 100%);
+    pointer-events: none;
+    z-index: 2;
+}
+
+/* ৫. শুধুমাত্র ভেতরের সিডি গোল গোল ঘোরার ক্লাস (জাভাস্ক্রিপ্ট এটি টগল করবে) */
+.cd-vinyl-art.spinning {
+    animation-play-state: running;
+}
+
+/* স্পিন করার নিখুঁত অক্ষীয় কি-ফ্রেম */
+@keyframes spinDisk {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+
+.scrolling-title-box { margin-left: 15px; overflow: hidden; white-space: nowrap; width: 100%; }
+.scrolling-text { font-size: 20px; font-weight: bold; color: #fff; display: inline-block; animation: marquee 8s linear infinite; }
+
+@keyframes marquee {
+    0% { transform: translate3d(100%, 0, 0); }
+    100% { transform: translate3d(-100%, 0, 0); }
+}
+
+.kd-visualizer-container {
+    flex-grow: 1; position: relative; margin: 5px 20px;
+    border-radius: 8px; border: 1px dashed rgba(255, 255, 255, 0.3);
+    background: rgba(0, 0, 0, 0.05); overflow: hidden;
+}
+
+.album-bg-overlay {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background-size: cover; background-position: center; filter: blur(4px); opacity: 0.5; z-index: 1;
+}
+
+.bar-wrapper {
+    position: absolute; bottom: 0; left: 0; width: 100%; height: 100%;
+    display: flex; justify-content: space-around; align-items: flex-end; padding: 0 4px; box-sizing: border-box; z-index: 2;
+}
+
+.visual-bar {
+    flex-grow: 1; margin: 0 1px; background: linear-gradient(to top, #ffcc99, #ffffff);
+    border-radius: 2px 2px 0 0; box-shadow: 0 0 5px rgba(255, 255, 255, 0.5); height: 10%; transition: height 0.05s ease;
+}
+
+.kd-timeline-section { padding: 5px 20px; }
+.seekbar-wrapper { position: relative; width: 100%; height: 5px; background: #ffaa66; border-radius: 3px; margin-bottom: 4px; }
+#seekBar { position: absolute; width: 100%; height: 100%; top: 0; left: 0; opacity: 0; cursor: pointer; margin: 0; }
+.seekbar-ball { position: absolute; width: 12px; height: 12px; background: #fff; border: 2px solid #ffcc99; border-radius: 50%; top: -4px; left: 0%; pointer-events: none; }
+.time-labels { display: flex; justify-content: space-between; color: #fff; font-size: 14px; font-weight: bold; }
+
+.kd-controller-pad { display: flex; align-items: center; justify-content: space-between; padding: 15px 20px 25px 20px; }
+.side-indicator-text { color: #cc5200; font-weight: bold; font-size: 15px; }
+.side-indicator-arrow { color: #fff; font-weight: bold; font-size: 16px; }
+
+/* নতুন ডাইনামিক স্পিকার বক্স কন্টেইনার */
+.speaker-box {
+    position: relative;
+    width: 16px;
+    height: 45px;
+    background: rgba(0,0,0,0.3);
+    border-radius: 4px;
+    overflow: hidden;
+    display: flex;
+    align-items: flex-end;
+}
+
+/* স্পিকারের চার্জিং লেভেল ইফেক্ট */
+.speaker-level {
+    position: absolute;
+    bottom: 0; left: 0;
+    width: 100%;
+    height: 70%; /* ডিফল্ট ভলিউম লেভেল ইন্ডিকেটর */
+    background: linear-gradient(to top, rgba(255,255,255,0.2), rgba(255,255,255,0.9));
+    box-shadow: 0 0 8px #fff;
+    transition: height 0.2s ease;
+    z-index: 1;
+}
+
+/* অরিজিনাল কার্ভড ব্র্যাকেট ওভারলে 
+.curved-bracket-left, .curved-bracket-right {
+    width: 100%; height: 100%;
+    border: 3px solid #ffcc99;
+    box-sizing: border-box;
+    position: absolute; top: 0; left: 0;
+    z-index: 2;
+    pointer-events: none;
+}*/
+
+.curved-bracket-left, .curved-bracket-right {
+    width: 15px; height: 45px;
+    border: 3px solid #ffcc99;
+    box-shadow: 0 0 6px #fff;}
+
+.curved-bracket-left { border-right: none; border-radius: 25px 0 0 25px; }
+.curved-bracket-right { border-left: none; border-radius: 0 25px 25px 0; }
+
+.center-buttons {
+    display: flex; align-items: center; background: rgba(255, 255, 255, 0.2);
+    padding: 2px 10px; border-radius: 30px; border: 1px solid #ffcc99;
+}
+
+.ctrl-btn { background: none; border: none; color: #fff; font-size: 16px; padding: 6px 12px; cursor: pointer; }
+
+/* প্লে পজ ডিজাইন (পারফেক্টলি ফিক্সড) */
+.play-pause-core {
+    background: transparent; 
+    color: #fff; 
+    border: 2px solid #fff; 
+    border-radius: 50%;
+    font-size: 14px; font-weight: bold; 
+    width: 36px; height: 36px;
+    display: flex; justify-content: center; align-items: center;
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.4); 
+    margin: 0 8px;
+    transition: all 0.2s ease;
+}
+
+.play-pause-core.playing {
+    background: #fff !important;
+    color: #ff6600 !important;
+    border: 2px solid #fff !important;
+    box-shadow: 0 0 12px #fff !important;
+}
+
+//.kd-softkey-bar {
+    background: #e65c00; border-top: 2px solid #ff8533;
+    display: flex; justify-content: space-between;
+    padding: 12px 20px 16px 20px; margin-top: auto;
+}//
+
+.soft-btn { color: #fff; font-size: 15px; font-weight: bold; cursor: pointer; width: 33%; }
+.center-status { text-align: center; color: #ffebcc; }
+.text-right { text-align: right; }
+
+.java-popup-menu {
+    position: absolute; bottom: 50px; left: 15px; width: 170px;
+    background: #111; border: 2px solid #ff8533; border-radius: 4px; display: none; z-index: 100;
+}
+.menu-item { color: #ff8533; padding: 10px 14px; font-size: 13px; font-weight: bold; border-bottom: 1px solid #222; cursor: pointer; }
+.menu-item:hover { background: #ff6600; color: #000; }
+
+/* গান প্লে হলে সিডি আইকন ঘোরানোর ক্লাস */
+.cd-vinyl-art.spinning {
+    animation: spinDisk 4s linear infinite;
+}
+
+/* পজ বা স্টপ করলে যেখানে ছিল সেখানেই মসৃণভাবে থেমে যাওয়ার প্রোপার্টি */
+.cd-vinyl-art {
+    transition: transform 0.5s ease;
+    animation-play-state: paused;
+}
+
+.cd-vinyl-art.spinning {
+    animation-play-state: running;
+}
+
+/* ঘূর্ণনের মূল কি-ফ্রেম অ্যানিমেশন */
+@keyframes spinDisk {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* ১. ওরিজিনাল জাভা স্টাইল ফেডিং সাদা লাইন (ইউ এবং এস এর কাছে ভ্যানিশ) */
+.java-fade-line {
+    width: 100%;
+    height: 1.2px; /* একদম সূক্ষ্ম জাভা স্টাইল থিকনেস */
+    background: linear-gradient(to right, 
+        rgba(255, 255, 255, 0) 0%,        /* বাম কোণায় সম্পূর্ণ হাওয়া */
+        rgba(255, 255, 255, 0) 15%,       /* Menu-র 'M', 'e', 'n' পর্যন্ত পুরোপুরি অদৃশ্য */
+        rgba(255, 255, 255, 0.4) 22%,     /* 'u' এর কাছাকাছি এসে হালকা সাদা শুরু */
+        rgba(255, 255, 255, 0.95) 50%,    /* মাঝখানে Pause-এর উপরে একদম উজ্জ্বল ও স্পষ্ট সাদা */
+        rgba(255, 255, 255, 0.4) 78%,     /* Stop-এর 'S' এর কাছে এসে আবার হালকা */
+        rgba(255, 255, 255, 0) 85%,       /* 't', 'o', 'p' এর ওপর থেকে শেষ পর্যন্ত সম্পূর্ণ অদৃশ্য */
+        rgba(255, 255, 255, 0) 100%
+    );
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* ২. মেনুবার ব্যাকগ্রাউন্ড আপডেট (বডির অরেঞ্জ কালারের সাথে পুরোপুরি ম্যাচিং) */
+.kd-softkey-bar {
+    background: transparent; /* বডির ব্যাকগ্রাউন্ডের সাথে এক হয়ে যাবে */
+    border-top: none; /* আগের এক্সট্রা বর্ডার থাকলে তা বাদ দেওয়া হলো */
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 25px 16px 25px; 
+    margin-top: auto;
+    box-sizing: border-box;
+}
