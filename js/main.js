@@ -21,12 +21,103 @@ const javaSubMenu = document.getElementById('javaSubMenu');
 let playlist = [];
 let currentTrackIndex = 0;
 let audioContext, analyser, source, dataArray;
+let db;
 
-// প্রথমবার প্লেয়ার ওপেন হলে স্ক্রিনকে "00" অবস্থায় রাখা
-resetMetaToZero();
+// ১. IndexedDB ডাটাবেস ইনিশিয়েলাইজ করা (পার্মানেন্ট অডিও ফাইল স্টোরেজ)
+function initDatabase() {
+    const request = indexedDB.open("KDPlayerDB", 1);
+    
+    request.onupgradeneeded = (e) => {
+        db = e.target.result;
+        if (!db.objectStoreNames.contains("songs")) {
+            db.createObjectStore("songs", { keyPath: "id", autoIncrement: true });
+        }
+    };
+
+    request.onsuccess = (e) => {
+        db = e.target.result;
+        loadPlaylistFromStorage(); // ডাটাবেস রেডি হলে আগের সেভ করা গান লোড হবে
+    };
+
+    request.onerror = () => console.log("Database error");
+}
+
+// ২. ডাটাবেস থেকে গানগুলো প্লেলিস্টে ফিরিয়ে আনা
+function loadPlaylistFromStorage() {
+    const transaction = db.transaction(["songs"], "readonly");
+    const store = transaction.objectStore("songs");
+    const getAllRequest = store.getAll();
+
+    getAllRequest.onsuccess = () => {
+        const savedSongs = getAllRequest.result;
+        if (savedSongs && savedSongs.length > 0) {
+            playlist = savedSongs.map(item => ({
+                title: item.title,
+                src: URL.createObjectURL(item.blob), // ব্লব থেকে লোকাল ইউআরএল তৈরি
+                rawFile: item.blob
+            }));
+
+            // LocalStorage থেকে আগের লাস্ট পজিশন ডেটা রিড করা
+            const lastIndex = localStorage.getItem("kd_last_index");
+            const lastTime = localStorage.getItem("kd_last_time");
+
+            if (lastIndex !== null && playlist[lastIndex]) {
+                currentTrackIndex = parseInt(lastIndex);
+                loadTrack(currentTrackIndex, false); // গান লোড হবে কিন্তু অটো-প্লে হবে না
+                
+                // আগের ছেড়ে যাওয়া সেকেন্ডে মিউজিক সেট করা
+                if (lastTime !== null) {
+                    audio.currentTime = parseFloat(lastTime);
+                }
+            } else {
+                loadTrack(0, false);
+            }
+        } else {
+            resetMetaToZero();
+        }
+    };
+}
+
+// ৩. নতুন সিলেক্ট করা গানগুলো ডাটাবেসে পার্মানেন্টলি সেভ করা
+function saveFilesToStorage(files) {
+    const transaction = db.transaction(["songs"], "readwrite");
+    const store = transaction.objectStore("songs");
+
+    // নতুন ফোল্ডার নিলে আগের গানগুলো পরিষ্কার করে দেওয়া
+    store.clear(); 
+
+    let count = 0;
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (file.type.startsWith('audio/') || file.name.endsWith('.mp3')) {
+            const songData = {
+                title: file.name.replace(/\.[^/.]+$/, ""),
+                blob: file // আসল ফাইল ডাটা ব্লব আকারে সেভ হচ্ছে
+            };
+            store.add(songData);
+            count++;
+        }
+    }
+
+    transaction.oncomplete = () => {
+        if (count > 0) {
+            loadPlaylistFromStorage(); // সেভ শেষে নতুন প্লেলিস্ট রিলোড
+        }
+    };
+}
+
+// ৪. প্রতি সেকেন্ডে লাস্ট স্ট্যাটাস সেভ করে রাখা
+function saveCurrentPlaybackState() {
+    if (playlist.length === 0) return;
+    localStorage.setItem("kd_last_index", currentTrackIndex);
+    localStorage.setItem("kd_last_time", audio.currentTime);
+}
+
+// অ্যাপ চালুর প্রাথমিক সেটিংস
+initDatabase();
 updateSpeakerVisuals(0.7);
 
-// ভলিউম কন্ট্রোল বাইন্ডিং
+// ভলিউম ও কীবোর্ড বাইন্ডিং
 if (volUpTrigger) volUpTrigger.addEventListener('click', volumeUp);
 if (volDownTrigger) volDownTrigger.addEventListener('click', volumeDown);
 
@@ -35,7 +126,7 @@ window.addEventListener('keydown', (e) => {
     else if (e.key === 'ArrowDown' || e.keyCode === 25 || e.keyCode === 174) { e.preventDefault(); volumeDown(); }
 });
 
-// মেনু কন্ট্রোল
+// মেনু টগল
 if (menuTriggerBtn) {
     menuTriggerBtn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -54,55 +145,32 @@ function initAnalyser() {
         analyser.connect(audioContext.destination);
         analyser.fftSize = 128;
         dataArray = new Uint8Array(analyser.frequencyBinCount);
-    } catch (e) {
-        console.log("Audio node context error in APK:", e);
-    }
+    } catch (e) { console.log(e); }
 }
 
-// ফাইল আপলোড ইভেন্ট (APK মাল্টিপল সিলেকশন ফিক্স)
+// গান সিলেক্ট করার ইভেন্ট (ডাটাবেস সেভারের সাথে কানেক্টেড)
 if (fileInput) {
     fileInput.addEventListener('change', (e) => {
         const files = e.target.files;
         if (!files || files.length === 0) return;
-        
-        playlist = [];
-        for (let i = 0; i < files.length; i++) {
-            playlist.push({
-                title: files[i].name.replace(/\.[^/.]+$/, ""),
-                src: URL.createObjectURL(files[i]),
-                rawFile: files[i]
-            });
-        }
-        if (playlist.length > 0) { 
-            currentTrackIndex = 0; 
-            loadTrack(currentTrackIndex); 
-        }
+        saveFilesToStorage(files); // সরাসরি ডাটাবেসে সেভ হবে
     });
 }
 
-// অ্যান্ড্রয়েড সেফ ট্র্যাক লোড ও মেটা ক্যালকুলেশন লজিক
-function loadTrack(index) {
+function loadTrack(index, shouldAutoPlay = true) {
     if (playlist.length === 0) return;
     const track = playlist[index];
     updateTrackTitle(track.title);
     audio.src = track.src;
     
-    // অ্যালবাম আর্ট লোড করা (এরর হ্যান্ডলার সহ)
-    try {
-        setAlbumArt(track.rawFile);
-    } catch (err) {
-        console.log("Album art reading skipped in APK:", err);
-    }
+    try { setAlbumArt(track.rawFile); } catch (err) { console.log(err); }
     
-    // APK এর জন্য সবচেয়ে নিরাপদ ইভেন্ট লিসেনার: loadeddata
-    audio.ondataavailable = null; 
     audio.onloadeddata = () => {
         updateMetaInfo(track.rawFile, audio.duration, index, playlist.length);
-        playTrack(); 
+        if (shouldAutoPlay) playTrack(); 
         audio.onloadeddata = null; 
     };
     
-    // ব্যাকআপ ট্রিগার যদি onloadeddata কোনো ডিভাইসে মিস হয়
     audio.onloadedmetadata = () => {
         updateMetaInfo(track.rawFile, audio.duration, index, playlist.length);
         audio.onloadedmetadata = null;
@@ -116,19 +184,11 @@ function playTrack() {
     
     audio.play().then(() => {
         if (statusIndicator) statusIndicator.innerText = "Playing";
-        if (playBtn) {
-            playBtn.innerHTML = "Ⅱ";
-            playBtn.classList.add('playing');
-        }
+        if (playBtn) { playBtn.innerHTML = "Ⅱ"; playBtn.classList.add('playing'); }
         startCDAnimation();
         if (analyser) animateVisualizer(analyser, dataArray, false);
     }).catch(err => {
-        console.log("APK Audio play requires user interaction first:", err);
-        // অটো-প্লে ব্লক হলে ইউজারকে প্লে বাটনে চাপ দেওয়ার সুযোগ দেওয়া
-        if (playBtn) {
-            playBtn.innerHTML = "▶";
-            playBtn.classList.remove('playing');
-        }
+        if (playBtn) { playBtn.innerHTML = "▶"; playBtn.classList.remove('playing'); }
     });
 }
 
@@ -139,26 +199,21 @@ function togglePlay() {
     } else {
         audio.pause();
         if (statusIndicator) statusIndicator.innerText = "Pause";
-        if (playBtn) {
-            playBtn.innerHTML = "▶";
-            playBtn.classList.remove('playing');
-        }
+        if (playBtn) { playBtn.innerHTML = "▶"; playBtn.classList.remove('playing'); }
         stopCDAnimation();
+        saveCurrentPlaybackState(); // পজ করলেও স্টেট সেভ হবে
     }
 }
 
-// কন্ট্রোল বাটন লিসেনারস
 if (playBtn) playBtn.addEventListener('click', togglePlay);
 if (stopBtn) {
     stopBtn.addEventListener('click', () => {
         audio.pause(); audio.currentTime = 0;
         if (statusIndicator) statusIndicator.innerText = "Stopped";
-        if (playBtn) {
-            playBtn.innerHTML = "▶";
-            playBtn.classList.remove('playing');
-        }
+        if (playBtn) { playBtn.innerHTML = "▶"; playBtn.classList.remove('playing'); }
         stopCDAnimation();
         resetVisualizerBars();
+        saveCurrentPlaybackState();
     });
 }
 
@@ -166,7 +221,7 @@ if (nextBtn) {
     nextBtn.addEventListener('click', () => {
         if (playlist.length === 0) return;
         currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
-        loadTrack(currentTrackIndex);
+        loadTrack(currentTrackIndex, true);
     });
 }
 
@@ -174,17 +229,17 @@ if (prevBtn) {
     prevBtn.addEventListener('click', () => {
         if (playlist.length === 0) return;
         currentTrackIndex = (currentTrackIndex - 1 + playlist.length) % playlist.length;
-        loadTrack(currentTrackIndex);
+        loadTrack(currentTrackIndex, true);
     });
 }
 
 audio.addEventListener('ended', () => {
     if (playlist.length === 0) return;
     currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
-    loadTrack(currentTrackIndex);
+    loadTrack(currentTrackIndex, true);
 });
 
-// সিকবার ও টাইম ট্র্যাকিং
+// সিকবার আপডেট এবং রিয়েল-টাইম পজিশন অটো-সেভ
 audio.addEventListener('timeupdate', () => {
     if (isNaN(audio.duration)) return;
     const progress = (audio.currentTime / audio.duration) * 100;
@@ -195,10 +250,16 @@ audio.addEventListener('timeupdate', () => {
     let durMin = Math.floor(audio.duration / 60), durSec = Math.floor(audio.duration % 60);
     if (currentTimeText) currentTimeText.innerText = `${curMin < 10 ? '0'+curMin : curMin}:${curSec < 10 ? '0'+curSec : curSec}`;
     if (durationTimeText) durationTimeText.innerText = `${durMin < 10 ? '0'+durMin : durMin}:${durSec < 10 ? '0'+durSec : durSec}`;
+    
+    // প্রতি ৩ সেকেন্ড পর পর প্লেব্যাক টাইম মেমোরিতে ব্যাকআপ হবে
+    if (Math.floor(audio.currentTime) % 3 === 0) {
+        saveCurrentPlaybackState();
+    }
 });
 
 if (seekBar) {
     seekBar.addEventListener('input', () => {
         audio.currentTime = (seekBar.value / 100) * audio.duration;
+        saveCurrentPlaybackState();
     });
 }
